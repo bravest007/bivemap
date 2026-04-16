@@ -12,14 +12,16 @@ export default function JarvisSidebar() {
   const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) : null;
   const focusContext = selectedNode ? `선택된 노드 제목: [${selectedNode.data.icon} ${selectedNode.data.label}]\n노드 상세 원문: ${selectedNode.data.original_content || ''}` : null;
 
-  const { messages, append, status } = useChat();
+  const { messages, sendMessage, status } = useChat();
   const isLoading = status === 'submitted' || status === 'streaming';
 
   const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!textInput || textInput.trim() === '') return;
     
-    append({ role: 'user', content: textInput }, { body: { modelId: modelLevel, focusContext } });
+    // According to SDK v5+, useChat returns sendMessage, and UIMessage expects 'parts' or 'text' depending on the union
+    // We send { parts: [{ type: 'text', text: textInput }] } to be safest and comply with convertToModelMessages
+    sendMessage({ parts: [{ type: 'text', text: textInput }] }, { body: { modelId: modelLevel, focusContext } });
     setTextInput('');
   };
 
@@ -55,7 +57,7 @@ export default function JarvisSidebar() {
               key={m.id} 
               className={`p-3 text-sm rounded-xl max-w-[85%] shadow-sm ${m.role === 'user' ? 'bg-cyan/20 border border-cyan/30 text-cyan-50 self-end' : 'bg-white/5 border border-white/10 text-gray-300 self-start pb-4'}`}
             >
-              {m.parts ? m.parts.map((p, i) => p.type === 'text' ? <span key={i}>{p.text}</span> : null) : m.content}
+              {m.parts ? m.parts.map((p: any, i: number) => p.type === 'text' ? <span key={i}>{p.text}</span> : null) : ((m as any).content || (m as any).text || '')}
             </div>
           ))}
           {isLoading && (

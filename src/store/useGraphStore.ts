@@ -81,7 +81,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     // 1. UI 먼저 업데이트 (Optimistic)
     const newEdgeTemplate = { ...connection, id: `e-${connection.source}-${connection.target}`, animated: true, style: { stroke: '#00F3FF', strokeWidth: 2 } };
     set({
-      edges: addEdge(newEdgeTemplate, get().edges),
+      edges: addEdge(newEdgeTemplate as any, get().edges as any),
     });
 
     // 2. DB에 연결선 푸시 저장
