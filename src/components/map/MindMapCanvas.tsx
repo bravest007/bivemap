@@ -118,7 +118,8 @@ export default function MindMapCanvas() {
             nodeStrokeWidth={3} 
             zoomable 
             pannable 
-            style={{ backgroundColor: 'rgba(10,10,10,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', right: '420px', bottom: '24px' }} 
+            className="!right-4 md:!right-[420px] transition-all duration-300"
+            style={{ backgroundColor: 'rgba(10,10,10,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', bottom: '24px' }} 
             nodeColor={(node) => node.selected ? '#00F3FF' : '#333'}
             maskColor="rgba(0, 0, 0, 0.7)"
           />

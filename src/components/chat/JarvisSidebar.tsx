@@ -7,6 +7,7 @@ import { useGraphStore } from '@/store/useGraphStore';
 export default function JarvisSidebar() {
   const [modelLevel, setModelLevel] = useState('normal');
   const [textInput, setTextInput] = useState('');
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { selectedNodeId, nodes } = useGraphStore();
   
   const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) : null;
@@ -26,14 +27,21 @@ export default function JarvisSidebar() {
   };
 
   return (
-    <div className="absolute right-0 top-0 h-full w-full md:w-[400px] z-40 p-4 transform translate-y-[calc(100%-80px)] md:translate-y-0 pointer-events-none fade-in">
+    <div className={`absolute right-0 top-0 h-full w-full md:w-[400px] z-40 p-4 transform transition-transform duration-300 pointer-events-none fade-in ${isMobileOpen ? 'translate-y-16' : 'translate-y-[calc(100%-80px)]'} md:translate-y-0`}>
       <div className="h-full w-full rounded-2xl bg-glass border border-border-glass backdrop-blur-xl flex flex-col overflow-hidden pointer-events-auto shadow-2xl transition-all duration-300">
         
-        {/* Header */}
-        <div className="p-4 border-b border-border-glass flex justify-between items-center bg-black/20">
+        {/* Header - Clickable on mobile to toggle */}
+        <div 
+          className="p-4 border-b border-border-glass flex justify-between items-center bg-black/20 md:cursor-default cursor-pointer touch-manipulation"
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+        >
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${isLoading ? 'bg-purple-500 shadow-[0_0_8px_#B537F2] animate-pulse' : 'bg-cyan shadow-[0_0_8px_#00F3FF]'}`}></div>
-            <span className="font-bold text-white tracking-widest text-sm">JARVIS</span>
+            <span className="font-bold text-white tracking-widest text-sm flex items-center gap-2">
+              JARVIS
+               {/* Mobile toggle hint icon */}
+              <svg className={`w-4 h-4 md:hidden transition-transform duration-300 ${isMobileOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+            </span>
           </div>
           
           <select 
