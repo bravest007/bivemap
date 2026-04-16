@@ -2,14 +2,26 @@
 
 import React, { useState } from 'react';
 import { useChat } from '@ai-sdk/react';
+import { useGraphStore } from '@/store/useGraphStore';
 
 export default function JarvisSidebar() {
   const [modelLevel, setModelLevel] = useState('normal');
+  const [textInput, setTextInput] = useState('');
+  const { selectedNodeId, nodes } = useGraphStore();
   
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: '/api/chat',
-    body: { modelId: modelLevel }
-  });
+  const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) : null;
+  const focusContext = selectedNode ? `선택된 노드 제목: [${selectedNode.data.icon} ${selectedNode.data.label}]\n노드 상세 원문: ${selectedNode.data.original_content || ''}` : null;
+
+  const { messages, append, status } = useChat();
+  const isLoading = status === 'submitted' || status === 'streaming';
+
+  const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!textInput || textInput.trim() === '') return;
+    
+    append({ role: 'user', content: textInput }, { body: { modelId: modelLevel, focusContext } });
+    setTextInput('');
+  };
 
   return (
     <div className="absolute right-0 top-0 h-full w-full md:w-[400px] z-40 p-4 transform translate-y-[calc(100%-80px)] md:translate-y-0 pointer-events-none fade-in">
@@ -43,7 +55,7 @@ export default function JarvisSidebar() {
               key={m.id} 
               className={`p-3 text-sm rounded-xl max-w-[85%] shadow-sm ${m.role === 'user' ? 'bg-cyan/20 border border-cyan/30 text-cyan-50 self-end' : 'bg-white/5 border border-white/10 text-gray-300 self-start pb-4'}`}
             >
-              {m.content}
+              {m.parts ? m.parts.map((p, i) => p.type === 'text' ? <span key={i}>{p.text}</span> : null) : m.content}
             </div>
           ))}
           {isLoading && (
@@ -55,10 +67,10 @@ export default function JarvisSidebar() {
 
         {/* Input Area */}
         <div className="p-4 bg-black/20 border-t border-border-glass">
-          <form onSubmit={handleSubmit} className="relative">
+          <form onSubmit={onFormSubmit} className="relative">
             <input 
-              value={input}
-              onChange={handleInputChange}
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
               type="text" 
               placeholder="자비스에게 무엇이든 질문하기..." 
               className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-10 py-3 text-sm text-white outline-none focus:border-cyan/50 transition-colors"

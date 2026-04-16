@@ -5,6 +5,8 @@ interface GraphState {
   nodes: Node[];
   edges: Edge[];
   isLoading: boolean;
+  selectedNodeId: string | null;
+  setSelectedNodeId: (id: string | null) => void;
   fetchGraph: () => Promise<void>;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
@@ -17,6 +19,9 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   nodes: [],
   edges: [],
   isLoading: true,
+  selectedNodeId: null,
+
+  setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 
   fetchGraph: async () => {
     try {

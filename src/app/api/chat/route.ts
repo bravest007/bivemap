@@ -1,4 +1,4 @@
-import { streamText, embed } from 'ai';
+import { streamText, embed, convertToModelMessages } from 'ai';
 import { google } from '@ai-sdk/google';
 import { createClient } from '@/utils/supabase/server';
 
@@ -6,8 +6,15 @@ export const maxDuration = 30; // Serverless function max duration
 
 export async function POST(req: Request) {
   try {
-    const { messages, modelId = 'normal' } = await req.json();
-    const latestMessage = messages[messages.length - 1].content;
+    const { messages, modelId = 'normal', focusContext } = await req.json();
+    
+    const latestUserMessage = messages[messages.length - 1];
+    let latestMessage = "";
+    if (latestUserMessage?.parts) {
+       latestMessage = latestUserMessage.parts.find((p: any) => p.type === 'text')?.text || "";
+    } else if (latestUserMessage) {
+       latestMessage = latestUserMessage.content || "";
+    }
 
     // Model selection logic
     const modelMapping: Record<string, string> = {
@@ -30,7 +37,7 @@ export async function POST(req: Request) {
     const supabase = await createClient();
     const { data: matchedNodes, error } = await supabase.rpc('match_nodes', {
       query_embedding: safeEmbedding,
-      match_threshold: 0.5,
+      match_threshold: 0.2,
       match_count: 5,
     });
 
@@ -39,8 +46,13 @@ export async function POST(req: Request) {
     }
 
     const contextStr = matchedNodes && matchedNodes.length > 0
-      ? matchedNodes.map((n: any) => `[${n.label}]: ${n.original_content}`).join('\n')
+      ? matchedNodes.map((n: any) => `[Node: ${n.icon} ${n.label}]\nContent: ${n.original_content}`).join('\n\n')
       : "현재 마인드맵에 관련된 명확한 지식이 없습니다.";
+
+    // Include the explicitly focused node if selected
+    const focusString = focusContext 
+      ? `\n\n--- 사용자가 캔버스에서 현재 집중(선택)하여 보고 있는 노드 ---\n${focusContext}\n이 내용에 대해 질문하면 최우선으로 참고하여 깊게 대답하세요.`
+      : '';
 
     // 3. Construct System Prompt with RAG Context
     const systemPrompt = `
@@ -51,16 +63,18 @@ export async function POST(req: Request) {
 
       [마인드맵 지식 컨텍스트 (RAG)]
       ${contextStr}
+      ${focusString}
     `;
 
     // 4. Stream response to client via Vercel AI SDK
+    const modelMessages = await convertToModelMessages(messages);
     const result = streamText({
       model: google(targetModel),
       system: systemPrompt,
-      messages,
+      messages: modelMessages,
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
   } catch (error: any) {
     console.error("Chat API Error:", error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
